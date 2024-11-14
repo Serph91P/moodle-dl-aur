@@ -21,15 +21,14 @@ jobs:
           echo "release_tag=$latest_release" >> $GITHUB_ENV
 
       - name: Update PKGBUILD in Arch environment
-        uses: docker://archlinux:latest
-        with:
-          entrypoint: /bin/sh
         run: |
-          pacman -Sy --noconfirm base-devel git jq
-          latest_version=${release_tag}
-          sed -i "s/pkgver=.*/pkgver=${latest_version#v}/" PKGBUILD
-          updpkgsums
+          docker run --rm -v $PWD:/workspace -w /workspace archlinux:latest sh -c "
+          pacman -Sy --noconfirm base-devel git jq &&
+          latest_version=${{ env.release_tag }} &&
+          sed -i 's/pkgver=.*/pkgver=${latest_version#v}/' PKGBUILD &&
+          updpkgsums &&
           makepkg --printsrcinfo > .SRCINFO
+          "
 
       - name: Commit and Push
         env:
@@ -42,4 +41,5 @@ jobs:
           git config --global user.name "Max Ebert"
           git config --global user.email "Pesticide3902@proton.me"
           git add PKGBUILD .SRCINFO
-          git commit -m "Update to v
+          git commit -m "Update to version ${{ env.release_tag }}"
+          git push aur master
