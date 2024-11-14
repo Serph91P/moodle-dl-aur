@@ -11,7 +11,7 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Get Latest Release via API
         id: get_release
@@ -25,8 +25,8 @@ jobs:
           docker run --rm \
             -v "${{ github.workspace }}:/workspace" \
             -w /workspace \
-            archlinux:base sh -c "
-            pacman -Sy --noconfirm base-devel git jq &&
+            archlinux:latest bash -c "
+            pacman -Sy --noconfirm base-devel git jq pacman-contrib &&
             release_tag=${{ env.release_tag }} &&
             sed -i 's/pkgver=.*/pkgver=${release_tag#v}/' PKGBUILD &&
             updpkgsums &&
