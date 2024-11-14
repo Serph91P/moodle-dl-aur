@@ -20,14 +20,17 @@ jobs:
           echo "Latest release is $latest_release"
           echo "release_tag=$latest_release" >> $GITHUB_ENV
 
-      - name: Update PKGBUILD in Arch environment
+      - name: Update PKGBUILD using Arch Linux Docker
         run: |
-          docker run --rm -v $PWD:/workspace -w /workspace archlinux:latest sh -c "
-          pacman -Sy --noconfirm base-devel git jq &&
-          latest_version=${{ env.release_tag }} &&
-          sed -i 's/pkgver=.*/pkgver=${latest_version#v}/' PKGBUILD &&
-          updpkgsums &&
-          makepkg --printsrcinfo > .SRCINFO
+          docker run --rm \
+            -v "${{ github.workspace }}:/workspace" \
+            archlinux:latest bash -c "
+            pacman -Sy --noconfirm base-devel git jq &&
+            cd /workspace &&
+            latest_version=${{ env.release_tag }} &&
+            sed -i 's/pkgver=.*/pkgver=${latest_version#v}/' PKGBUILD &&
+            updpkgsums &&
+            makepkg --printsrcinfo > .SRCINFO
           "
 
       - name: Commit and Push
