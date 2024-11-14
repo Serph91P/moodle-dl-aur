@@ -12,11 +12,12 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Get Latest Release
+      - name: Get Latest Release via API
         id: get_release
-        uses: dawidd6/action-get-latest-release@v6
-        with:
-          repository: C0D3D3V/Moodle-DL
+        run: |
+          latest_release=$(curl -s https://api.github.com/repos/C0D3D3V/Moodle-DL/releases/latest | jq -r .tag_name)
+          echo "Latest release is $latest_release"
+          echo "release_tag=$latest_release" >> $GITHUB_ENV
 
       - name: Update PKGBUILD
         run: |
