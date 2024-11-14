@@ -7,11 +7,15 @@ on:
 
 jobs:
   update-pkgbuild:
-    runs-on: ubuntu-latest
+    runs-on: archlinux # Nutze den Arch-Linux-Runner
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
+
+      - name: Install required tools
+        run: |
+          sudo pacman -Sy --noconfirm base-devel git jq
 
       - name: Get Latest Release via API
         id: get_release
@@ -20,18 +24,12 @@ jobs:
           echo "Latest release is $latest_release"
           echo "release_tag=$latest_release" >> $GITHUB_ENV
 
-      - name: Update PKGBUILD using Arch Linux Docker
+      - name: Update PKGBUILD
         run: |
-          docker run --rm \
-            -v "${{ github.workspace }}:/workspace" \
-            archlinux:latest bash -c "
-            pacman -Sy --noconfirm base-devel git jq &&
-            cd /workspace &&
-            latest_version=${{ env.release_tag }} &&
-            sed -i 's/pkgver=.*/pkgver=${latest_version#v}/' PKGBUILD &&
-            updpkgsums &&
-            makepkg --printsrcinfo > .SRCINFO
-          "
+          latest_version=${{ env.release_tag }}
+          sed -i "s/pkgver=.*/pkgver=${latest_version#v}/" PKGBUILD
+          updpkgsums
+          makepkg --printsrcinfo > .SRCINFO
 
       - name: Commit and Push
         env:
