@@ -2,7 +2,7 @@ name: Update AUR Package
 
 on:
   schedule:
-    - cron: '0 0 * * *'
+    - cron: '0 0 * * *' # Täglich um Mitternacht prüfen
   workflow_dispatch:
 
 jobs:
@@ -22,8 +22,8 @@ jobs:
 
       - name: Update PKGBUILD in Arch environment
         uses: docker://archlinux:latest
-        env:
-          release_tag: ${{ env.release_tag }}
+        with:
+          entrypoint: /bin/sh
         run: |
           pacman -Sy --noconfirm base-devel git jq
           latest_version=${release_tag}
@@ -42,5 +42,4 @@ jobs:
           git config --global user.name "Max Ebert"
           git config --global user.email "Pesticide3902@proton.me"
           git add PKGBUILD .SRCINFO
-          git commit -m "Update to version ${{ env.release_tag }}"
-          git push aur master
+          git commit -m "Update to v
