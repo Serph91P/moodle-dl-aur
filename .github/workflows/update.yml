@@ -55,9 +55,9 @@ jobs:
           # Ensure the remote is set
           git remote add aur ssh://aur@aur.archlinux.org/moodle-dl.git || true
 
-          # Fetch and merge remote changes
+          # Fetch and merge remote changes with unrelated histories allowed
           git fetch aur master
-          git merge --no-edit aur/master
+          git merge aur/master --allow-unrelated-histories --no-edit
 
           # Commit local changes
           git add PKGBUILD .SRCINFO
@@ -65,4 +65,5 @@ jobs:
 
           # Push to master
           git push aur master
+
 
