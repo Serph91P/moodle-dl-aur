@@ -56,9 +56,9 @@ jobs:
           git remote add aur ssh://aur@aur.archlinux.org/moodle-dl.git || true
 
           # Änderungen committen
-          git branch -M main
+          git branch -M master
           git add PKGBUILD .SRCINFO
           git commit -m "Update to version ${{ env.release_tag }}"
 
           # Änderungen pushen
-          git push aur main
+          git push aur master
