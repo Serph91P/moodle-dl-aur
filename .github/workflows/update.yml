@@ -65,5 +65,3 @@ jobs:
 
           # Push to master
           git push aur master
-
-
