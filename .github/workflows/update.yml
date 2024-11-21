@@ -46,15 +46,19 @@ jobs:
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan aur.archlinux.org >> ~/.ssh/known_hosts
-
+          
           git config --global user.name "Max Ebert"
           git config --global user.email "Pesticide3902@proton.me"
-          
-          # Sicherstellen, dass der richtige Branch ausgecheckt ist
+
+          # Sicherstellen, dass der Remote korrekt hinzugefügt ist
+          git remote add aur ssh://aur@aur.archlinux.org/moodle-dl.git || true
+
+          # Sicherstellen, dass der richtige Branch verwendet wird
           git branch -M main
           git add PKGBUILD .SRCINFO
           git commit -m "Update to version ${{ env.release_tag }}"
-          
-          # Push auf den korrekten Branch
+
+          # Änderungen pushen
           git push aur main
+
 
