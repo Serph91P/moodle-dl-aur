@@ -5,9 +5,14 @@ on:
     - cron: '0 0 * * *'
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   update-pkgbuild:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
       - name: Checkout Repository
@@ -17,30 +22,70 @@ jobs:
 
       - name: Get Latest Release via API
         id: get_release
+        timeout-minutes: 5
         run: |
-          latest_release=$(curl -s https://api.github.com/repos/C0D3D3V/Moodle-DL/releases/latest | jq -r .tag_name)
+          response=$(curl -sL -w "%{http_code}" -o response.json https://api.github.com/repos/C0D3D3V/Moodle-DL/releases/latest)
+          if [ "$response" != "200" ]; then
+            echo "Error: GitHub API request failed with status $response"
+            exit 1
+          fi
+          latest_release=$(jq -r .tag_name response.json)
+          if [ -z "$latest_release" ]; then
+            echo "Error: Could not extract release tag"
+            exit 1
+          fi
           echo "Latest release is $latest_release"
           echo "release_tag=$latest_release" >> $GITHUB_ENV
 
-      - name: Run in Arch Linux Docker Container
+      - name: Cache Docker Image
+        uses: actions/cache@v3
+        with:
+          path: /tmp/docker-save
+          key: ${{ runner.os }}-docker-archlinux-${{ hashFiles('**/PKGBUILD') }}
+
+      - name: Load cached Docker image
         run: |
+          if [ -f /tmp/docker-save/archlinux.tar ]; then
+            docker load -i /tmp/docker-save/archlinux.tar
+          fi
+
+      - name: Run in Arch Linux Docker Container
+        timeout-minutes: 15
+        run: |
+          docker pull archlinux:base
+          mkdir -p /tmp/docker-save
+          docker save archlinux:base > /tmp/docker-save/archlinux.tar
+          
           docker run --rm \
             -v "${{ github.workspace }}:/workspace" \
             -w /workspace \
             archlinux:base sh -c "
-            pacman -Sy --noconfirm base-devel git jq pacman-contrib &&
+            pacman -Sy --noconfirm base-devel git jq pacman-contrib namcap &&
             useradd -m builder &&
             chown -R builder:builder /workspace &&
             su builder -c '
               release_tag=${{ env.release_tag }} &&
               sed -i \"s/pkgver=.*/pkgver=\${release_tag#v}/\" PKGBUILD &&
               updpkgsums &&
-              makepkg --printsrcinfo > .SRCINFO
+              makepkg --printsrcinfo > .SRCINFO &&
+              namcap PKGBUILD
             ' &&
             chown -R $(id -u):$(id -g) /workspace
           "
 
+      - name: Verify Files
+        run: |
+          if [ ! -f "PKGBUILD" ]; then
+            echo "Error: PKGBUILD file is missing"
+            exit 1
+          fi
+          if [ ! -f ".SRCINFO" ]; then
+            echo "Error: .SRCINFO file is missing"
+            exit 1
+          fi
+
       - name: Commit and Push
+        timeout-minutes: 5
         env:
           SSH_PRIVATE_KEY: ${{ secrets.AUR_SSH_KEY }}
         run: |
@@ -52,17 +97,17 @@ jobs:
           git config --global user.name "Max Ebert"
           git config --global user.email "Pesticide3902@proton.me"
 
-          # Ensure the remote is set
           git remote add aur ssh://aur@aur.archlinux.org/moodle-dl.git || true
 
-          # Fetch and merge remote changes
           git fetch aur master
           git checkout master || git checkout -b master
           git merge aur/master --allow-unrelated-histories --no-edit
 
-          # Commit local changes
-          git add PKGBUILD .SRCINFO
-          git commit -m "Update to version ${{ env.release_tag }}" || echo "No changes to commit"
+          if git diff --quiet PKGBUILD .SRCINFO; then
+            echo "No changes to commit"
+            exit 0
+          fi
 
-          # Push to master
+          git add PKGBUILD .SRCINFO
+          git commit -m "Update to version ${{ env.release_tag }}"
           git push aur master
