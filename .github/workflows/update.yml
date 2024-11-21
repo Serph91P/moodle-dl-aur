@@ -97,11 +97,16 @@ jobs:
           git config --global user.name "Max Ebert"
           git config --global user.email "Pesticide3902@proton.me"
 
-          git remote add aur ssh://aur@aur.archlinux.org/moodle-dl.git || true
+          # Stash current changes
+          git stash
 
+          git remote add aur ssh://aur@aur.archlinux.org/moodle-dl.git || true
           git fetch aur master
           git checkout master || git checkout -b master
           git merge aur/master --allow-unrelated-histories --no-edit
+
+          # Pop stashed changes
+          git stash pop
 
           if git diff --quiet PKGBUILD .SRCINFO; then
             echo "No changes to commit"
