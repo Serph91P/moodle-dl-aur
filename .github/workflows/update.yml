@@ -52,13 +52,17 @@ jobs:
           git config --global user.name "Max Ebert"
           git config --global user.email "Pesticide3902@proton.me"
 
-          # Sicherstellen, dass der Remote korrekt hinzugefügt ist
+          # Ensure the remote is set
           git remote add aur ssh://aur@aur.archlinux.org/moodle-dl.git || true
 
-          # Änderungen committen
-          git branch -M master
-          git add PKGBUILD .SRCINFO
-          git commit -m "Update to version ${{ env.release_tag }}"
+          # Fetch and merge remote changes
+          git fetch aur master
+          git merge --no-edit aur/master
 
-          # Änderungen pushen
+          # Commit local changes
+          git add PKGBUILD .SRCINFO
+          git commit -m "Update to version ${{ env.release_tag }}" || echo "No changes to commit"
+
+          # Push to master
           git push aur master
+
