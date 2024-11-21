@@ -11,7 +11,7 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
       - name: Get Latest Release via API
         id: get_release
@@ -34,7 +34,8 @@ jobs:
               sed -i \"s/pkgver=.*/pkgver=\${release_tag#v}/\" PKGBUILD &&
               updpkgsums &&
               makepkg --printsrcinfo > .SRCINFO
-            '
+            ' &&
+            chown -R $(id -u):$(id -g) /workspace
           "
 
       - name: Commit and Push
