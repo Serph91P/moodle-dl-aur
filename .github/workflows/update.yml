@@ -51,7 +51,7 @@ jobs:
           git config --global user.email "Pesticide3902@proton.me"
 
           # Sicherstellen, dass der Remote korrekt hinzugefügt ist
-          git remote add aur ssh://aur@aur.archlinux.org/moodle-dl.git || true
+          git remote add aur https://aur@aur.archlinux.org/moodle-dl.git || true
 
           # Sicherstellen, dass der richtige Branch verwendet wird
           git branch -M main
