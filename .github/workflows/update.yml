@@ -55,8 +55,9 @@ jobs:
           # Ensure the remote is set
           git remote add aur ssh://aur@aur.archlinux.org/moodle-dl.git || true
 
-          # Fetch and merge remote changes with unrelated histories allowed
+          # Fetch and merge remote changes
           git fetch aur master
+          git checkout master || git checkout -b master
           git merge aur/master --allow-unrelated-histories --no-edit
 
           # Commit local changes
