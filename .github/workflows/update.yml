@@ -27,12 +27,14 @@ jobs:
             -w /workspace \
             archlinux:base sh -c "
             pacman -Sy --noconfirm base-devel git jq pacman-contrib &&
-            export PATH=/usr/bin:/usr/local/bin &&
-            which updpkgsums &&
-            release_tag=${{ env.release_tag }} &&
-            sed -i 's/pkgver=.*/pkgver=${release_tag#v}/' PKGBUILD &&
-            updpkgsums &&
-            makepkg --printsrcinfo > .SRCINFO
+            useradd -m builder &&
+            chown -R builder:builder /workspace &&
+            su builder -c '
+              release_tag=${{ env.release_tag }} &&
+              sed -i \"s/pkgver=.*/pkgver=\${release_tag#v}/\" PKGBUILD &&
+              updpkgsums &&
+              makepkg --printsrcinfo > .SRCINFO
+            '
           "
 
       - name: Commit and Push
